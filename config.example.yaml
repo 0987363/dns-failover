@@ -1,0 +1,21 @@
+provider:
+  name: cloudflare
+  key: "xxxxxxxxxxxxxxxx"
+
+ip_test:
+  interval: 2
+  count: 4
+  timeout: 10
+
+domains:
+  - name: "xxx.xxx.xyz"
+    proxied: false
+    ip_type: IPv4
+    ips:
+      - "1.1.1.1"
+      - "8.8.8.8"
+    ip_test:
+      interval: 10s
+      sampling: 5
+      timeout: 5s
+
