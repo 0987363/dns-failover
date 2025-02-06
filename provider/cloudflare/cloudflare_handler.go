@@ -82,7 +82,10 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 		return err
 	}
 
-	records := provider.getDNSRecords(zoneID, dr.IPType)
+	records, err := provider.getDNSRecords(zoneID, dr.IPType)
+	if err != nil {
+		return err
+	}
 	matched := false
 
 	for _, rec := range records {
@@ -92,11 +95,14 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 			continue
 		}
 
+		log.Debug("Found record:", rec.Name)
 		if rec.IP != dr.IP {
 			log.Infof("IP mismatch: Current(%+v) vs Cloudflare(%+v)", dr.IP, rec.IP)
-			provider.updateRecord(rec, dr.IP)
+			if err := provider.updateRecord(rec, dr.IP); err != nil {
+				return err
+			}
 		} else {
-			log.Infof("Record OK: %+v - %+v", rec.Name, rec.IP)
+			log.Infof("Update record success: %+v - %+v", rec.Name, rec.IP)
 		}
 
 		matched = true
@@ -141,7 +147,7 @@ func (provider *CloudflareProvider) getZone(domain string) (string, error) {
 	if err = json.Unmarshal(body, &z); err != nil {
 		return "", err
 	}
-	log.Debugf("Response: %+v", z)
+	log.Debugf("Get zoon response: %+v", z)
 	if !z.Success {
 		return "", models.Error("Recv unsuccess: ", z)
 	}
@@ -155,9 +161,7 @@ func (provider *CloudflareProvider) getZone(domain string) (string, error) {
 }
 
 // Get all DNS A records for a zone.
-func (provider *CloudflareProvider) getDNSRecords(zoneID, ipType string) []DNSRecord {
-
-	var empty []DNSRecord
+func (provider *CloudflareProvider) getDNSRecords(zoneID, ipType string) ([]DNSRecord, error) {
 	var r DNSRecordResponse
 	recordType := getRecordType(ipType)
 
@@ -165,24 +169,20 @@ func (provider *CloudflareProvider) getDNSRecords(zoneID, ipType string) []DNSRe
 	req, client := provider.newRequest("GET", fmt.Sprintf("/zones/"+zoneID+"/dns_records?type=%s&page=1&per_page=500", recordType), nil)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error("Request error:", err)
-		return empty
+		return nil, err
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		log.Infof("Decoder error: %+v", err)
-		log.Debugf("Response body: %+v", string(body))
-		return empty
+	log.Debugf("Response body: %+v", string(body))
+	if err = json.Unmarshal(body, &r); err != nil {
+		return nil, err
 	}
-	if !r.Success {
-		body, _ := io.ReadAll(resp.Body)
-		log.Infof("Response failed: %+v", string(body))
-		return empty
 
+	log.Debugf("Get dns record response: %+v", r)
+	if !r.Success {
+		return nil, models.Error("Recv unsuccess: ", r)
 	}
-	return r.Records
+	return r.Records, nil
 }
 func getRecordType(ipType string) string {
 	if ipType == "" || strings.ToUpper(ipType) == IPV4 {
@@ -213,38 +213,34 @@ func (provider *CloudflareProvider) createRecord(zoneID string, dr *models.Domai
 	req, client := provider.newRequest("POST", fmt.Sprintf("/zones/%s/dns_records", zoneID), bytes.NewBuffer(content))
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error("Request error:", err)
 		return err
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Errorf("Failed to read request body: %+v", err)
 		return err
 	}
 
 	var r DNSRecordUpdateResponse
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		log.Errorf("Decoder error: %+v", err)
+	log.Debugf("Response body: %+v", string(body))
+	if err = json.Unmarshal(body, &r); err != nil {
 		return err
 	}
 
+	log.Debugf("Create record response: %+v", r)
 	if !r.Success {
-		log.Infof("Response failed: %+v", string(body))
-		return fmt.Errorf("failed to create record: %+v", string(body))
+		return models.Error("Recv unsuccess: ", r)
 	}
 
 	return nil
 }
 
 // Update DNS A Record with new IP.
-func (provider *CloudflareProvider) updateRecord(record DNSRecord, newIP string) string {
+func (provider *CloudflareProvider) updateRecord(record DNSRecord, newIP string) error {
 
 	var r DNSRecordUpdateResponse
 	record.SetIP(newIP)
-	var lastIP string
 
 	j, _ := json.Marshal(record)
 	req, client := provider.newRequest("PUT",
@@ -253,24 +249,18 @@ func (provider *CloudflareProvider) updateRecord(record DNSRecord, newIP string)
 	)
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error("Request error:", err)
-		return ""
+		return err
 	}
 
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	err = json.Unmarshal(body, &r)
-	if err != nil {
-		log.Errorf("Decoder error: %+v", err)
-		log.Debugf("Response body: %+v", string(body))
-		return ""
+	log.Debugf("Response body: %+v", string(body))
+	if err = json.Unmarshal(body, &r); err != nil {
+		return err
 	}
+	log.Debugf("Update record response: %+v", r)
 	if !r.Success {
-		body, _ := io.ReadAll(resp.Body)
-		log.Infof("Response failed: %+v", string(body))
-	} else {
-		log.Infof("Record updated: %+v - %+v", record.Name, record.IP)
-		lastIP = record.IP
+		return models.Error("Recv unsuccess: ", r)
 	}
-	return lastIP
+	return nil
 }
