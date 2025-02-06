@@ -1,4 +1,5 @@
 a.out
+dns-failover
 config.yaml
 *.swo
 *.swp
