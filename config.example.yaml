@@ -3,9 +3,9 @@ provider:
   key: "xxxxxxxxxxxxxxxx"
 
 ip_test:
-  interval: 2
-  count: 4
-  timeout: 10
+  interval: 60s
+  sampling: 10
+  timeout: 5s
 
 domains:
   - name: "xxx.xxx.xyz"
@@ -15,7 +15,7 @@ domains:
       - "1.1.1.1"
       - "8.8.8.8"
     ip_test:
-      interval: 10s
-      sampling: 5
+      interval: 60s
+      sampling: 10
       timeout: 5s
 

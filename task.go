@@ -10,11 +10,11 @@ import (
 )
 
 func ScheduledTask(provider provider.Provider, domainConfig *models.Domain) {
+	log.Debug("Immediate execution:", time.Now().Format(time.RFC3339))
+	executeTask(provider, domainConfig)
+
 	ticker := time.NewTicker(domainConfig.IpTest.Interval)
 	defer ticker.Stop()
-
-	log.Debug("Immediate execution: ", time.Now().Format(time.RFC3339))
-	executeTask(provider, domainConfig)
 
 	for {
 		select {

@@ -52,7 +52,7 @@ func main() {
 
 	provider := provider.Init(&config.ProviderConfig)
 	for _, domainConfig := range config.Domains {
-		go ScheduledTask(provider, &domainConfig)
+		go ScheduledTask(provider, domainConfig)
 		time.Sleep(time.Second)
 	}
 	select {}
