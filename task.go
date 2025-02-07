@@ -30,11 +30,11 @@ func executeTask(provider provider.Provider, domainConfig *models.Domain) {
 	for _, ip := range domainConfig.IPs {
 		res, err := Ping(ip, domainConfig.IpTest.Timeout, domainConfig.IpTest.Sampling)
 		if err != nil {
-			log.Errorf("Error pinging address %s: %v\n", ip, err)
+			log.Errorf("Ping %s failed: %v", ip, err)
 			continue
 		}
 		res.IP = ip
-		log.Infof("ping result: %+v\n", res)
+		log.Infof("Ping result: %+v", res)
 
 		if bestPing == nil || res.Quality < bestPing.Quality {
 			bestPing = res
@@ -52,8 +52,8 @@ func executeTask(provider provider.Provider, domainConfig *models.Domain) {
 		IPType:  domainConfig.IPType,
 		Proxied: domainConfig.Proxied,
 	}
-	log.Infof("Start update dns: %+v\n", dr)
+	log.Infof("Start update dns: %+v", dr)
 	if err := provider.UpdateDNS(dr); err != nil {
-		log.Info("Update dns failed: ", err)
+		log.Error("Update dns failed: ", err)
 	}
 }
