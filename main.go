@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -40,14 +39,16 @@ func init() {
 	default:
 		// 如果环境变量值不合法，默认设置为 info
 		logrus.SetLevel(logrus.InfoLevel)
-		fmt.Printf("Invalid log level: %s, defaulting to info\n", logLevel)
 	}
+
+	logrus.SetFormatter(&logrus.TextFormatter{ForceColors: true, FullTimestamp: true})
+	logrus.Info("Set log level: ", logLevel)
 }
 
 func main() {
 	config, err := config.LoadConfig("config.yaml")
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf("failed to load config: %v\n", err)
 	}
 
 	provider := provider.Init(&config.ProviderConfig)

@@ -89,7 +89,7 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 
 		log.Debug("Found record:", rec.Name)
 		if rec.IP != dr.IP {
-			log.Infof("IP mismatch: Current(%+v) vs Cloudflare(%+v)", dr.IP, rec.IP)
+			log.Infof("IP mismatch: Current(%+v) vs Cloudflare(%+v)\n", dr.IP, rec.IP)
 			rec.ZoneID = zoneID
 			rec.IP = dr.IP
 			if err := provider.updateRecord(rec); err != nil {
@@ -97,7 +97,7 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 			}
 			continue
 		}
-		log.Infof("Skipping update, Same IP %+v", rec.IP)
+		log.Info("Skipping update, Same IP ", rec.IP)
 		return nil
 	}
 
@@ -110,11 +110,11 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 		ZoneID:  zoneID,
 	}
 
-	log.Debugf("Record %+v not found, will create it.", record)
+	log.Debugf("Record %+v not found, will create it.\n", record)
 	if err := provider.createRecord(record); err != nil {
 		return err
 	}
-	log.Infof("Record [%+v] created with IP address", dr)
+	log.Infof("Record [%+v] created with IP address\n", dr)
 
 	return nil
 }
@@ -143,11 +143,11 @@ func (provider *CloudflareProvider) getZone(domain string) (string, error) {
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	log.Debugf("Response body: %+v", string(body))
+	log.Debug("Response body: ", string(body))
 	if err = json.Unmarshal(body, &z); err != nil {
 		return "", err
 	}
-	log.Debugf("Get zone response: %+v", z)
+	log.Debugf("Get zone response: %+v\n", z)
 	if !z.Success {
 		return "", models.Error("Get zone unsuccess: ", z)
 	}
@@ -165,7 +165,7 @@ func (provider *CloudflareProvider) getDNSRecords(zoneID, ipType string) ([]DNSR
 	var r DNSRecordResponse
 	recordType := getRecordType(ipType)
 
-	log.Debugf("Querying records with type: %s", recordType)
+	log.Debug("Querying records with type: ", recordType)
 	req, client := provider.newRequest("GET", fmt.Sprintf("/zones/"+zoneID+"/dns_records?type=%s&page=1&per_page=500", recordType), nil)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -173,12 +173,12 @@ func (provider *CloudflareProvider) getDNSRecords(zoneID, ipType string) ([]DNSR
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	log.Debugf("Response body: %+v", string(body))
+	log.Debug("Response body: ", string(body))
 	if err = json.Unmarshal(body, &r); err != nil {
 		return nil, err
 	}
 
-	log.Debugf("Get dns record response: %+v", r)
+	log.Debugf("Get dns record response: %+v\n", r)
 	if !r.Success {
 		return nil, models.Error("Get dns unsuccess: ", r)
 	}
@@ -196,7 +196,7 @@ func (provider *CloudflareProvider) createRecord(record *DNSRecord) error {
 
 	content, err := json.Marshal(record)
 	if err != nil {
-		log.Errorf("Encoder error: %+v", err)
+		log.Error("Encoder error: ", err)
 		return err
 	}
 
@@ -213,12 +213,12 @@ func (provider *CloudflareProvider) createRecord(record *DNSRecord) error {
 	}
 
 	var r DNSRecordUpdateResponse
-	log.Debugf("Create record response body: %+v", string(body))
+	log.Debug("Create record response body: ", string(body))
 	if err = json.Unmarshal(body, &r); err != nil {
 		return err
 	}
 
-	log.Debugf("Create record response: %+v", r)
+	log.Debugf("Create record response: %+v\n", r)
 	if !r.Success {
 		return models.Error("Create record unsuccess: ", r)
 	}
@@ -242,12 +242,12 @@ func (provider *CloudflareProvider) updateRecord(record DNSRecord) error {
 
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	log.Debugf("Update record response body: %+v", string(body))
+	log.Debug("Update record response body: ", string(body))
 	if err = json.Unmarshal(body, &r); err != nil {
 		return err
 	}
 
-	log.Debugf("Update record response: %+v", r)
+	log.Debugf("Update record response: %+v\n", r)
 	if !r.Success {
 		return models.Error("Update record unsuccess: ", r)
 	}

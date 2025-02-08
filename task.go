@@ -10,7 +10,7 @@ import (
 )
 
 func ScheduledTask(provider provider.Provider, domainConfig *models.Domain) {
-	log.Debug("Immediate execution:", time.Now().Format(time.RFC3339))
+	log.Infof("Immediate execution: %+v, test:%+v\n", domainConfig, domainConfig.IpTest)
 	executeTask(provider, domainConfig)
 
 	ticker := time.NewTicker(domainConfig.IpTest.Interval)
@@ -19,7 +19,7 @@ func ScheduledTask(provider provider.Provider, domainConfig *models.Domain) {
 	for {
 		select {
 		case <-ticker.C:
-			log.Debug("Start scheduled task:", time.Now().Format(time.RFC3339))
+			log.Infof("Start scheduled task: %+v, test:%+v\n", domainConfig, domainConfig.IpTest)
 			executeTask(provider, domainConfig)
 		}
 	}
@@ -30,11 +30,11 @@ func executeTask(provider provider.Provider, domainConfig *models.Domain) {
 	for _, ip := range domainConfig.IPs {
 		res, err := Ping(ip, domainConfig.IpTest.Timeout, domainConfig.IpTest.Sampling)
 		if err != nil {
-			log.Errorf("Ping %s failed: %v", ip, err)
+			log.Errorf("Ping %s failed: %v\n", ip, err)
 			continue
 		}
 		res.IP = ip
-		log.Infof("Ping result: %+v", res)
+		log.Infof("Ping result: %+v\n", res)
 
 		if bestPing == nil || res.Quality < bestPing.Quality {
 			bestPing = res
@@ -52,7 +52,7 @@ func executeTask(provider provider.Provider, domainConfig *models.Domain) {
 		IPType:  domainConfig.IPType,
 		Proxied: domainConfig.Proxied,
 	}
-	log.Infof("Start update dns: %+v", dr)
+	log.Infof("Start update dns: %+v\n", dr)
 	if err := provider.UpdateDNS(dr); err != nil {
 		log.Error("Update dns failed: ", err)
 	}

@@ -25,11 +25,11 @@ func Ping(address string, timeout time.Duration, sampling int) (*models.PingResu
 	}
 	pinger.Count = sampling
 	pinger.Interval = time.Millisecond * time.Duration(100)
-	pinger.Timeout = time.Second * time.Duration(timeout)
-
+	pinger.Timeout = timeout
 	if err := pinger.Run(); err != nil {
 		return nil, err
 	}
+
 	stats := pinger.Statistics()
 
 	latency := stats.AvgRtt.Milliseconds()
