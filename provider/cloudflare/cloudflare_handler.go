@@ -88,23 +88,26 @@ func (provider *CloudflareProvider) UpdateDNS(dr *models.DomainRecord) error {
 		}
 
 		log.Debug("Found record:", rec.Name)
-		if rec.IP != dr.IP {
-			log.Infof("IP mismatch: Current(%+v) vs Cloudflare(%+v)\n", dr.IP, rec.IP)
-			rec.ZoneID = zoneID
-			rec.IP = dr.IP
-			if err := provider.updateRecord(rec); err != nil {
-				return err
-			}
-			continue
+		if rec.IP == dr.IP {
+			log.Info("Skipping update, Same IP ", rec.IP)
+			return nil
 		}
-		log.Info("Skipping update, Same IP ", rec.IP)
+
+		log.Infof("IP mismatch: Current(%+v) vs Cloudflare(%+v)\n", dr.IP, rec.IP)
+		rec.ZoneID = zoneID
+		rec.IP = dr.IP
+		rec.TTL = 60
+		if err := provider.updateRecord(rec); err != nil {
+			return err
+		}
+
 		return nil
 	}
 
 	record := &DNSRecord{
 		Type:    getRecordType(dr.IPType),
 		IP:      dr.IP,
-		TTL:     1,
+		TTL:     60,
 		Name:    dr.Name,
 		Proxied: dr.Proxied,
 		ZoneID:  zoneID,
