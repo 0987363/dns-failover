@@ -3,6 +3,6 @@ package models
 type PingResult struct {
 	IP       string
 	Latency  int
-	LossRate float32
-	Quality  float32
+	LossRate float64
+	Quality  float64
 }
