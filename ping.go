@@ -19,7 +19,7 @@ func CalculateQuality(latency int, lossRate float64) *models.PingResult {
 	// 丢包率得分计算（0%得100分，每增加1%扣10分）
 	lossScore := math.Max(0, 100.0-lossRate/100*10)
 	// 综合加权计算（延迟权重60%，丢包权重40%）
-	pr.Quality = latencyScore*0.5 + lossScore*0.5
+	pr.Quality = latencyScore*0.4 + lossScore*0.6
 	return pr
 }
 
